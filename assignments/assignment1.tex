@@ -1,0 +1,240 @@
+\documentclass[11pt,a4paper,english]{article}\usepackage[]{graphicx}\usepackage[]{xcolor}
+% maxwidth is the original width if it is less than linewidth
+% otherwise use linewidth (to make sure the graphics do not exceed the margin)
+\makeatletter
+\def\maxwidth{ %
+  \ifdim\Gin@nat@width>\linewidth
+    \linewidth
+  \else
+    \Gin@nat@width
+  \fi
+}
+\makeatother
+
+\definecolor{fgcolor}{rgb}{0.345, 0.345, 0.345}
+\newcommand{\hlnum}[1]{\textcolor[rgb]{0.686,0.059,0.569}{#1}}%
+\newcommand{\hlstr}[1]{\textcolor[rgb]{0.192,0.494,0.8}{#1}}%
+\newcommand{\hlcom}[1]{\textcolor[rgb]{0.678,0.584,0.686}{\textit{#1}}}%
+\newcommand{\hlopt}[1]{\textcolor[rgb]{0,0,0}{#1}}%
+\newcommand{\hlstd}[1]{\textcolor[rgb]{0.345,0.345,0.345}{#1}}%
+\newcommand{\hlkwa}[1]{\textcolor[rgb]{0.161,0.373,0.58}{\textbf{#1}}}%
+\newcommand{\hlkwb}[1]{\textcolor[rgb]{0.69,0.353,0.396}{#1}}%
+\newcommand{\hlkwc}[1]{\textcolor[rgb]{0.333,0.667,0.333}{#1}}%
+\newcommand{\hlkwd}[1]{\textcolor[rgb]{0.737,0.353,0.396}{\textbf{#1}}}%
+\let\hlipl\hlkwb
+
+\usepackage{framed}
+\makeatletter
+\newenvironment{kframe}{%
+ \def\at@end@of@kframe{}%
+ \ifinner\ifhmode%
+  \def\at@end@of@kframe{\end{minipage}}%
+  \begin{minipage}{\columnwidth}%
+ \fi\fi%
+ \def\FrameCommand##1{\hskip\@totalleftmargin \hskip-\fboxsep
+ \colorbox{shadecolor}{##1}\hskip-\fboxsep
+     % There is no \\@totalrightmargin, so:
+     \hskip-\linewidth \hskip-\@totalleftmargin \hskip\columnwidth}%
+ \MakeFramed {\advance\hsize-\width
+   \@totalleftmargin\z@ \linewidth\hsize
+   \@setminipage}}%
+ {\par\unskip\endMakeFramed%
+ \at@end@of@kframe}
+\makeatother
+
+\definecolor{shadecolor}{rgb}{.97, .97, .97}
+\definecolor{messagecolor}{rgb}{0, 0, 0}
+\definecolor{warningcolor}{rgb}{1, 0, 1}
+\definecolor{errorcolor}{rgb}{1, 0, 0}
+\newenvironment{knitrout}{}{} % an empty environment to be redefined in TeX
+
+\usepackage{alltt}
+\usepackage[latin1]{inputenc}
+\usepackage{hyperref}
+
+\usepackage{xcolor}
+\hypersetup{
+    colorlinks,
+    linkcolor={red!50!black},
+    citecolor={blue!50!black},
+    urlcolor={blue!80!black}
+}
+
+% Normal latex T1-fonts
+\usepackage[T1]{fontenc}
+
+% Figures
+\usepackage{graphicx}
+
+ % AMS-stuff
+\usepackage{amsmath,amsfonts,amssymb}
+\usepackage{amsbsy}
+
+ % Misc
+\usepackage{verbatim}
+\usepackage{url}
+
+\usepackage[round]{natbib}
+\bibliographystyle{unsrtnat}
+
+% Page size
+\addtolength{\hoffset}{-1cm}
+\addtolength{\textwidth}{2cm}
+\addtolength{\voffset}{-1cm}
+\addtolength{\textheight}{2cm}
+
+% Paragraph
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{1ex plus 0.5ex minus 0.2ex}
+
+% Horizontal line
+\newcommand{\HRule}{\rule{\linewidth}{0.5mm}}
+
+% No page numbers
+\pagestyle{empty}
+
+% New commands:
+\DeclareMathOperator{\var}{var}
+\DeclareMathOperator{\cov}{cov}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Prob}{\mathbb{P}}
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\begin{document}
+%\SweaveOpts{concordance=TRUE}
+
+\begin{titlepage}
+
+\center
+\textsc{\LARGE SIRCSS-CTA}\\[1.5cm] % Name of your university/college
+
+\HRule \\[0.4cm]
+{ \huge \bfseries Lab 1: Topic models}\\[0.4cm] % Title of your document
+\HRule \\[1.5cm]
+
+\vfill
+
+\end{titlepage}
+
+
+% General Knitr options
+% (this cannot be input since the file runs knitr before LaTeX)
+
+
+
+\section{Topic Models}
+
+This assignment uses the R package \texttt{uuml} with data and functionality to simplify coding. To install the packages just run the following:
+\begin{knitrout}\small
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlkwd{install.packages}\hlstd{(}\hlstr{"remotes"}\hlstd{)}
+\hlstd{remotes}\hlopt{::}\hlkwd{install_github}\hlstd{(}\hlstr{"MansMeg/IntroML"}\hlstd{,} \hlkwc{subdir} \hlstd{=} \hlstr{"rpackage"}\hlstd{)}
+\hlkwd{install.packages}\hlstd{(}\hlstr{"tidytext"}\hlstd{)}
+\hlkwd{install.packages}\hlstd{(}\hlstr{"topicmodels"}\hlstd{)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+We will now analyze the classical book Pride and Prejudice by Jane Austen using a probabilistic topic model. If you have not read the book, \href{https://en.wikipedia.org/wiki/Pride_and_Prejudice}{\textbf{here}} you can read up on the story.
+
+For this part of the assignment, \citet{griffiths2004finding} is the primary reference. I would also recommend reading \citet{blei2012probabilistic} before starting with the assignment.
+
+We will use a Gibbs sampler to estimate ten different topics occurring in Pride and Prejudice and study where they occur. A tokenized version of the book and a \texttt{data.frame} with stopwords can be loaded as follows:
+
+\begin{knitrout}\small
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlkwd{library}\hlstd{(uuml)}
+\hlkwd{library}\hlstd{(dplyr)}
+\end{alltt}
+
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \\\#\# Attaching package: 'dplyr'}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# The following objects are masked from 'package:stats':\\\#\# \\\#\# \ \ \ \ filter, lag}}
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# The following objects are masked from 'package:base':\\\#\# \\\#\# \ \ \ \ intersect, setdiff, setequal, union}}\begin{alltt}
+\hlkwd{library}\hlstd{(tidytext)}
+\hlkwd{data}\hlstd{(}\hlstr{"pride_and_prejudice"}\hlstd{)}
+\hlkwd{data}\hlstd{(}\hlstr{"stopwords"}\hlstd{)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+
+\begin{enumerate}
+\item As a first step, we will remove stopwords (common English words without much semantic information):
+\begin{knitrout}\small
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{pap} \hlkwb{<-} \hlstd{pride_and_prejudice}
+\hlstd{pap} \hlkwb{<-} \hlkwd{anti_join}\hlstd{(pap,} \hlkwc{y} \hlstd{= stopwords[stopwords}\hlopt{$}\hlstd{lexicon} \hlopt{==} \hlstr{"snowball"}\hlstd{,])}
+\end{alltt}
+
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# Joining with `by = join\_by(word)`}}\end{kframe}
+\end{knitrout}
+
+\item Then we will remove rare words. Here we remove words that occur less than five times.
+\begin{knitrout}\small
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{word_freq} \hlkwb{<-} \hlkwd{table}\hlstd{(pap}\hlopt{$}\hlstd{word)}
+\hlstd{rare_words} \hlkwb{<-} \hlkwd{data.frame}\hlstd{(}\hlkwc{word} \hlstd{=} \hlkwd{names}\hlstd{(word_freq[word_freq} \hlopt{<=} \hlnum{5}\hlstd{]),} \hlkwc{stringsAsFactors} \hlstd{=} \hlnum{FALSE}\hlstd{)}
+\hlstd{pap} \hlkwb{<-} \hlkwd{anti_join}\hlstd{(pap,} \hlkwc{y} \hlstd{= rare_words)}
+\end{alltt}
+
+
+{\ttfamily\noindent\itshape\color{messagecolor}{\#\# Joining with `by = join\_by(word)`}}\end{kframe}
+\end{knitrout}
+\item Now we have a corpus we can used to implement a probabilistic topic model. We do this by using the \texttt{topicmodels} R package. As a first step we will compute a document term matrix using the \texttt{tm} package, where we treat each paragraph as a document. How many documents and terms (word types) do you have?
+\begin{knitrout}\small
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlkwd{library}\hlstd{(tm)}
+\hlstd{crp} \hlkwb{<-} \hlkwd{aggregate}\hlstd{(pap}\hlopt{$}\hlstd{word,} \hlkwc{by} \hlstd{=} \hlkwd{list}\hlstd{(pap}\hlopt{$}\hlstd{paragraph),} \hlkwc{FUN} \hlstd{= paste0,} \hlkwc{collapse} \hlstd{=} \hlstr{" "}\hlstd{)}
+\hlkwd{names}\hlstd{(crp)} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlstr{"paragraph"}\hlstd{,} \hlstr{"text"}\hlstd{)}
+\hlstd{s} \hlkwb{<-} \hlkwd{SimpleCorpus}\hlstd{(}\hlkwd{VectorSource}\hlstd{(crp}\hlopt{$}\hlstd{text))}
+\hlstd{m} \hlkwb{<-} \hlkwd{DocumentTermMatrix}\hlstd{(s)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+\item To compute a topic model with ten topics, we use a Gibbs sampling algorithm. Below is an example of how we can run a Gibbs sampler for 2000 iterations. Run your topic model for 2000 iterations.
+\begin{knitrout}\small
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlkwd{library}\hlstd{(topicmodels)}
+\hlstd{K} \hlkwb{<-} \hlnum{10}
+\hlcom{# Note: delta is beta in Griffith and Steyvers (2004) notation.}
+\hlstd{control} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{keep} \hlstd{=} \hlnum{1}\hlstd{,} \hlkwc{delta} \hlstd{=} \hlnum{0.1}\hlstd{,} \hlkwc{alpha} \hlstd{=} \hlnum{1}\hlstd{,} \hlkwc{iter} \hlstd{=} \hlnum{2000}\hlstd{)}
+\hlstd{tm} \hlkwb{<-} \hlkwd{LDA}\hlstd{(m,} \hlkwc{k} \hlstd{= K,} \hlkwc{method} \hlstd{=} \hlstr{"Gibbs"}\hlstd{, control)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+\item In the \texttt{uuml} R package you have three convenience functions to extract $\Theta$, $\Phi$ and the log-likelihood values at each iteration. This is the parameter notation used in \citet{griffiths2004finding}.
+\begin{knitrout}\small
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlkwd{library}\hlstd{(uuml)}
+\hlstd{lls} \hlkwb{<-} \hlkwd{extract_log_liks}\hlstd{(tm)}
+\hlstd{theta} \hlkwb{<-} \hlkwd{extract_theta}\hlstd{(tm)}
+\hlstd{phi} \hlkwb{<-} \hlkwd{extract_phi}\hlstd{(tm)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+\item As a first step, check that the model has converged by visualizing the log-likelihood over epochs/iterations. Does it seem like the model have converged?
+\item Extract the 20 top words for each topic (i.e. the words with the highest probability in each topic). Choose two topics you find coherent/best (the top words seem to belong together). Interpret these two topics based on the storyline of the book. What have these two topics captured?
+\item Visualize these two topics evolve over the paragraphs in the books by plotting the $\theta$ parameters for that topic over time (paragraphs) in the book. Think of this as the time-line of the book. On the y-axis, you should plot $\theta_i$ for your chosen topic $i$ and the x-axis should be the paragraph number (first paragraph has number 1 and so forth).
+\item How do these two chosen topics evolve over the course in the book? If you want, you can take a rolling mean of the theta parameters to more easily show the changes in the topic over the book. \emph{Hint!} Here \texttt{zoo::rollmean()} might be a good function to use.
+\item Test to change the number of topics and do your own analysis of the novel when you feel you have a good number of topics.
+
+\end{enumerate}
+
+\bibliography{bibliography}
+
+\end{document}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:

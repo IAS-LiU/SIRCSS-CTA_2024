@@ -1,0 +1,154 @@
+\documentclass[11pt,a4paper,english]{article}
+\usepackage[latin1]{inputenc}
+\usepackage{hyperref}
+
+\usepackage{xcolor}
+\hypersetup{
+    colorlinks,
+    linkcolor={red!50!black},
+    citecolor={blue!50!black},
+    urlcolor={blue!80!black}
+}
+
+% Normal latex T1-fonts
+\usepackage[T1]{fontenc}
+
+% Figures
+\usepackage{graphicx}
+
+ % AMS-stuff
+\usepackage{amsmath,amsfonts,amssymb}
+\usepackage{amsbsy}
+
+ % Misc
+\usepackage{verbatim}
+\usepackage{url}
+
+\usepackage[round]{natbib}
+\bibliographystyle{unsrtnat}
+
+% Page size
+\addtolength{\hoffset}{-1cm}
+\addtolength{\textwidth}{2cm}
+\addtolength{\voffset}{-1cm}
+\addtolength{\textheight}{2cm}
+
+% Paragraph
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{1ex plus 0.5ex minus 0.2ex}
+
+% Horizontal line
+\newcommand{\HRule}{\rule{\linewidth}{0.5mm}}
+
+% No page numbers
+\pagestyle{empty}
+
+% New commands:
+\DeclareMathOperator{\var}{var}
+\DeclareMathOperator{\cov}{cov}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Prob}{\mathbb{P}}
+
+\begin{document}
+%\SweaveOpts{concordance=TRUE}
+
+\begin{titlepage}
+
+\center
+\textsc{\LARGE SIRCSS-CTA}\\[1.5cm] % Name of your university/college
+
+\HRule \\[0.4cm]
+{ \huge \bfseries Lab 1: Topic models}\\[0.4cm] % Title of your document
+\HRule \\[1.5cm]
+
+\vfill
+
+\end{titlepage}
+
+
+% General Knitr options
+% (this cannot be input since the file runs knitr before LaTeX)
+
+<<echo=FALSE, eval=TRUE>>=
+options(continue="  ", prompt="> ")
+knitr::opts_chunk$set(size = "small")
+@
+
+\section{Topic Models}
+
+This assignment uses the R package \texttt{uuml} with data and functionality to simplify coding. To install the packages just run the following:
+<<eval=FALSE>>=
+install.packages("remotes")
+remotes::install_github("MansMeg/IntroML", subdir = "rpackage")
+install.packages("tidytext")
+install.packages("topicmodels")
+
+@
+
+We will now analyze the classical book Pride and Prejudice by Jane Austen using a probabilistic topic model. If you have not read the book, \href{https://en.wikipedia.org/wiki/Pride_and_Prejudice}{\textbf{here}} you can read up on the story.
+
+For this part of the assignment, \citet{griffiths2004finding} is the primary reference. I would also recommend reading \citet{blei2012probabilistic} before starting with the assignment.
+
+We will use a Gibbs sampler to estimate ten different topics occurring in Pride and Prejudice and study where they occur. A tokenized version of the book and a \texttt{data.frame} with stopwords can be loaded as follows:
+
+<<>>=
+library(uuml)
+library(dplyr)
+library(tidytext)
+data("pride_and_prejudice")
+data("stopwords")
+@
+
+
+\begin{enumerate}
+\item As a first step, we will remove stopwords (common English words without much semantic information):
+<<>>=
+pap <- pride_and_prejudice
+pap <- anti_join(pap, y = stopwords[stopwords$lexicon == "snowball",])
+@
+
+\item Then we will remove rare words. Here we remove words that occur less than five times.
+<<>>=
+word_freq <- table(pap$word)
+rare_words <- data.frame(word = names(word_freq[word_freq <= 5]), stringsAsFactors = FALSE)
+pap <- anti_join(pap, y = rare_words)
+@
+\item Now we have a corpus we can used to implement a probabilistic topic model. We do this by using the \texttt{topicmodels} R package. As a first step we will compute a document term matrix using the \texttt{tm} package, where we treat each paragraph as a document. How many documents and terms (word types) do you have?
+<<eval=FALSE>>=
+library(tm)
+crp <- aggregate(pap$word, by = list(pap$paragraph), FUN = paste0, collapse = " ")
+names(crp) <- c("paragraph", "text")
+s <- SimpleCorpus(VectorSource(crp$text))
+m <- DocumentTermMatrix(s)
+@
+\item To compute a topic model with ten topics, we use a Gibbs sampling algorithm. Below is an example of how we can run a Gibbs sampler for 2000 iterations. Run your topic model for 2000 iterations.
+<<eval=FALSE>>=
+library(topicmodels)
+K <- 10
+# Note: delta is beta in Griffith and Steyvers (2004) notation.
+control <- list(keep = 1, delta = 0.1, alpha = 1, iter = 2000)
+tm <- LDA(m, k = K, method = "Gibbs", control)
+@
+\item In the \texttt{uuml} R package you have three convenience functions to extract $\Theta$, $\Phi$ and the log-likelihood values at each iteration. This is the parameter notation used in \citet{griffiths2004finding}.
+<<eval=FALSE>>=
+library(uuml)
+lls <- extract_log_liks(tm)
+theta <- extract_theta(tm)
+phi <- extract_phi(tm)
+@
+\item As a first step, check that the model has converged by visualizing the log-likelihood over epochs/iterations. Does it seem like the model have converged?
+\item Extract the 20 top words for each topic (i.e. the words with the highest probability in each topic). Choose two topics you find coherent/best (the top words seem to belong together). Interpret these two topics based on the storyline of the book. What have these two topics captured?
+\item Visualize these two topics evolve over the paragraphs in the books by plotting the $\theta$ parameters for that topic over time (paragraphs) in the book. Think of this as the time-line of the book. On the y-axis, you should plot $\theta_i$ for your chosen topic $i$ and the x-axis should be the paragraph number (first paragraph has number 1 and so forth).
+\item How do these two chosen topics evolve over the course in the book? If you want, you can take a rolling mean of the theta parameters to more easily show the changes in the topic over the book. \emph{Hint!} Here \texttt{zoo::rollmean()} might be a good function to use.
+\item Test to change the number of topics and do your own analysis of the novel when you feel you have a good number of topics.
+
+\end{enumerate}
+
+\bibliography{bibliography}
+
+\end{document}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:
