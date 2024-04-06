@@ -1,0 +1,256 @@
+\documentclass[11pt,a4paper,english]{article}\usepackage[]{graphicx}\usepackage[]{xcolor}
+% maxwidth is the original width if it is less than linewidth
+% otherwise use linewidth (to make sure the graphics do not exceed the margin)
+\makeatletter
+\def\maxwidth{ %
+  \ifdim\Gin@nat@width>\linewidth
+    \linewidth
+  \else
+    \Gin@nat@width
+  \fi
+}
+\makeatother
+
+\definecolor{fgcolor}{rgb}{0.345, 0.345, 0.345}
+\newcommand{\hlnum}[1]{\textcolor[rgb]{0.686,0.059,0.569}{#1}}%
+\newcommand{\hlstr}[1]{\textcolor[rgb]{0.192,0.494,0.8}{#1}}%
+\newcommand{\hlcom}[1]{\textcolor[rgb]{0.678,0.584,0.686}{\textit{#1}}}%
+\newcommand{\hlopt}[1]{\textcolor[rgb]{0,0,0}{#1}}%
+\newcommand{\hlstd}[1]{\textcolor[rgb]{0.345,0.345,0.345}{#1}}%
+\newcommand{\hlkwa}[1]{\textcolor[rgb]{0.161,0.373,0.58}{\textbf{#1}}}%
+\newcommand{\hlkwb}[1]{\textcolor[rgb]{0.69,0.353,0.396}{#1}}%
+\newcommand{\hlkwc}[1]{\textcolor[rgb]{0.333,0.667,0.333}{#1}}%
+\newcommand{\hlkwd}[1]{\textcolor[rgb]{0.737,0.353,0.396}{\textbf{#1}}}%
+\let\hlipl\hlkwb
+
+\usepackage{framed}
+\makeatletter
+\newenvironment{kframe}{%
+ \def\at@end@of@kframe{}%
+ \ifinner\ifhmode%
+  \def\at@end@of@kframe{\end{minipage}}%
+  \begin{minipage}{\columnwidth}%
+ \fi\fi%
+ \def\FrameCommand##1{\hskip\@totalleftmargin \hskip-\fboxsep
+ \colorbox{shadecolor}{##1}\hskip-\fboxsep
+     % There is no \\@totalrightmargin, so:
+     \hskip-\linewidth \hskip-\@totalleftmargin \hskip\columnwidth}%
+ \MakeFramed {\advance\hsize-\width
+   \@totalleftmargin\z@ \linewidth\hsize
+   \@setminipage}}%
+ {\par\unskip\endMakeFramed%
+ \at@end@of@kframe}
+\makeatother
+
+\definecolor{shadecolor}{rgb}{.97, .97, .97}
+\definecolor{messagecolor}{rgb}{0, 0, 0}
+\definecolor{warningcolor}{rgb}{1, 0, 1}
+\definecolor{errorcolor}{rgb}{1, 0, 0}
+\newenvironment{knitrout}{}{} % an empty environment to be redefined in TeX
+
+\usepackage{alltt}
+\usepackage[latin1]{inputenc}
+\usepackage{hyperref}
+
+\usepackage{xcolor}
+\hypersetup{
+    colorlinks,
+    linkcolor={red!50!black},
+    citecolor={blue!50!black},
+    urlcolor={blue!80!black}
+}
+
+% Normal latex T1-fonts
+\usepackage[T1]{fontenc}
+
+% Figures
+\usepackage{graphicx}
+
+ % AMS-stuff
+\usepackage{amsmath,amsfonts,amssymb}
+\usepackage{amsbsy}
+
+ % Misc
+\usepackage{verbatim}
+\usepackage{url}
+
+\usepackage[round]{natbib}
+\bibliographystyle{unsrtnat}
+
+% Page size
+\addtolength{\hoffset}{-1cm}
+\addtolength{\textwidth}{2cm}
+\addtolength{\voffset}{-1cm}
+\addtolength{\textheight}{2cm}
+
+% Paragraph
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{1ex plus 0.5ex minus 0.2ex}
+
+% Horizontal line
+\newcommand{\HRule}{\rule{\linewidth}{0.5mm}}
+
+% No page numbers
+\pagestyle{empty}
+
+% New commands:
+\DeclareMathOperator{\var}{var}
+\DeclareMathOperator{\cov}{cov}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Prob}{\mathbb{P}}
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\begin{document}
+%\SweaveOpts{concordance=TRUE}
+
+\begin{titlepage}
+
+\center
+\textsc{\LARGE SIRCSS-CTA}\\[1.5cm] % Name of your university/college
+
+\HRule \\[0.4cm]
+{ \huge \bfseries Lab 1: Topic models}\\[0.4cm] % Title of your document
+\HRule \\[1.5cm]
+
+\vfill
+
+\end{titlepage}
+
+
+% General Knitr options
+% (this cannot be input since the file runs knitr before LaTeX)
+
+
+
+\section{* Prompt engineering with ChatGPT}
+
+You can choose to either do this task or the task above to get VG on this assignment.
+
+\input{distinction_task.tex}
+
+For this assignment, you need to have a user account at Open AI to generate an API token. See \href{https://help.openai.com/en/articles/4936850-where-do-i-find-my-api-key}{[this link]} for details on how to get an API token to use.
+
+\textcolor{red}{\emph{Warning:}} Do not upload any files containing your API key to public repositories (Github, public google colab, etc.).
+
+You also need to buy credits at Open AI. I think 1-2 dollars should be sufficient for this assignment.
+
+As a second step you need to install the \texttt{ropenaiapi} R package. This can be done as follows:
+\begin{knitrout}\small
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlkwd{library}\hlstd{(remotes)}
+\hlstd{remotes}\hlopt{::}\hlkwd{install_github}\hlstd{(}\hlstr{'MansMeg/ropenaiapi'}\hlstd{)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+In the next step we set the API key as an environment variable with:
+\begin{knitrout}\small
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlkwd{library}\hlstd{(ropenaiapi)}
+\hlkwd{set_openai_api_key}\hlstd{(}\hlstr{"[YOUR KEY GOES HERE]"}\hlstd{)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+We can now call the API with the \texttt{openai\_chat} function.
+
+\begin{knitrout}\small
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{x} \hlkwb{<-} \hlkwd{openai_chat}\hlstd{(}\hlstr{"Who is Gustav Vasa? Give a short answer."}\hlstd{,}
+                 \hlkwc{model} \hlstd{=} \hlstr{"gpt-3.5-turbo"}\hlstd{)}
+\hlstd{x}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+\begin{knitrout}\small
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{verbatim}
+## assistant:
+## Gustav Vasa was a Swedish king who led a successful rebellion
+## against Danish rule and became the founder of modern Sweden in
+## the 16th century.
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
+
+See the \texttt{ropenaiapi} documentation with ```?openai\_chat``` in R for further information on how to interact with the Open AI API.
+
+\emph{Note!} If you get ```Error: You exceeded your current quota, please check your plan and billing details.``` that means that you don't have any credits to use for the calls. You then need to buy some credits from Open AI, 1-2 dollars should be sufficient for this task.
+
+
+\subsection{Make ChatGPT hallucinate}
+
+We are now going to understand how and when transformer-based decoder models 'hallucinate', i.e. when the models give factual incorrect information. See \cite[][, Section 7.1.2]{zhao2023survey} for an introduction and \cite{huang2023survey} for details on hallucinations in LLMs.
+
+Now, create 3 different hallucinations with three different strategies (i.e. its not ok to use the same prompt for three incorrect generations) from the chatGPT models (you can choose which one you like). For each generated hallucination return:
+
+\begin{enumerate}
+\item The prompt and a the \texttt{seed} supplied to the API. You are free to both create hallucinations through a longer conversation and tuning parameters.
+\item The response from the LLM.
+\item Why the response is factually incorrect and weather it is an intrinsic or extrinsic hallucination.
+\item Describe the strategy you use and the analysis why the hallucination happened.
+\end{enumerate}
+
+As a final step, when you have succeded to get the LLM to hallucinate, change the model to GPT-4 (include exact which model you use) and run the same prompt that you could get to hallucinate.
+
+\begin{enumerate}
+\item Return the response from GPT4 for each prompt.
+\item Is the response still factually incorrect? If not, see if you can get at least one hallucination for GPT-4. If you don't succeed, just state that.
+\end{enumerate}
+
+
+
+\subsection{In-Context Learning for few-shot classification}
+
+In-context learning is the idea to use large language models to complete tasks in a few-shot or zero-shot way. In this task we are going to try to classify political quotes in Swedish to weather they belong to the social democratic party manifesto or the conservative party (Moderaterna) manifesto.
+
+\emph{Note!} This data is included in \texttt{uuml} version 0.4.0 and later.
+
+\begin{knitrout}\small
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlkwd{library}\hlstd{(uuml)}
+\hlkwd{data}\hlstd{(}\hlstr{"pc_test"}\hlstd{)}
+\hlkwd{data}\hlstd{(}\hlstr{"pc_train"}\hlstd{)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+Below is an example on how you can combine the data to a text string that can be combined to be used in a prompt. Note, you need to develop further on this.
+
+\begin{knitrout}\small
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{example_string} \hlkwb{<-} \hlkwd{paste0}\hlstd{(pc_train}\hlopt{$}\hlstd{quote,}
+                         \hlstr{": "}\hlstd{,}
+                         \hlstd{pc_train}\hlopt{$}\hlstd{party,} \hlkwc{collapse} \hlstd{=} \hlstr{"\textbackslash{}n\textbackslash{}n"}\hlstd{)}
+\hlkwd{cat}\hlstd{(example_string)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+See \cite[][, Section 8]{zhao2023survey} for details on how to best engineer prompts to solve the classification task.
+
+Now use the techniques \cite[][, Section 8]{zhao2023survey} to generate as good prompts as possible to classify weather a quote is from the social democratic or the conservative manifesto.
+
+
+\begin{enumerate}
+\item Start with zero-shot learning, ie only prompt the LLM without any demonstrations. Test to classify the quotes in the test set.
+\item Test how far you can get by using better prompt descriptions to classify the quotes. Try to get responses as classes from the model.
+\item Now add demonstrations by adding examples from the training set. Does that improve the accuracy on the testset?
+\item Try at least three different strategies from \cite[][, Section 8]{zhao2023survey} to improve the quality. Discuss your conclusions.
+\end{enumerate}
+
+\newpage
+
+
+\bibliography{bibliography}
+
+\end{document}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:
