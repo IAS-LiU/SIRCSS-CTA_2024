@@ -58,7 +58,7 @@
 \textsc{\LARGE SIRCSS-CTA}\\[1.5cm] % Name of your university/college
 
 \HRule \\[0.4cm]
-{ \huge \bfseries Lab 1: Topic models}\\[0.4cm] % Title of your document
+{ \huge \bfseries Lab 4: Large Language Models}\\[0.4cm] % Title of your document
 \HRule \\[1.5cm]
 
 \vfill
