@@ -8,7 +8,7 @@ Use [this interactive map of Campus Norrköping](https://use.mazemap.com/#v=1&co
 
 ## Schedule
 
-TBA
+Please find the up-to-date schedule as a PDF file [here](https://github.com/IAS-LiU/SIRCSS-CTA_2024/blob/main/SIRCSS%20CTA%202024%20Schedule.pdf).
 
 ## License
 
