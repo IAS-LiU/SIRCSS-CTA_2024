@@ -1,75 +1,29 @@
-import networkx as nx
-import probabilistic_word_embeddings as pwe
-from probabilistic_word_embeddings.preprocessing import preprocess_standard, preprocess_partitioned
 from probabilistic_word_embeddings.embeddings import LaplacianEmbedding
-from probabilistic_word_embeddings.estimation import map_estimate
-from probabilistic_word_embeddings.evaluation import evaluate_on_holdout_set
 import pandas as pd
 import numpy as np
+import seaborn as sns
+from matplotlib import pyplot as plt
 
-DIM = 100
-VAL_SPLIT = 0.2
-YEAR0 = 2005
-YEAR1 = 2012
+# Load embedding 
+e = LaplacianEmbedding(saved_model_path="embedding.pkl")
 
-df = pd.read_csv("articles_en.csv") #.head(100000)
+def cosine_similarity(vec1, vec2):
+    return np.dot(vec1, vec2) /(np.linalg.norm(vec1) * np.linalg.norm(vec2))
 
-# Extract year from the 'Date' column
-df["year"] = df["Date"].str.split("/").str[0]
-print(df)
+# Calculate similarity
+w1, w2 = "rap_2011", "pop_2011"
+similarity = cosine_similarity(e[w1], e[w2])
+print("Similarity", w1, w2, similarity)
 
-# Drop null rows
-df = df.dropna()
+## Plot similarity over time
+w1, w2 = "gay", "bad"
+rows = []
+for year in range(2006, 2013):
+  w1_year, w2_year = f"{w1}_{year}", f"{w2}_{year}"
+  similarity = cosine_similarity(e[w1_year], e[w2_year])
+  row = [year, similarity]
+  rows.append(row)
+df = pd.DataFrame(rows, columns=["year", "similarity"])
+sns.lineplot(df, x="year", y="similarity")
 
-## Create train-val split
-df["val"] = np.random.rand(len(df)) <= VAL_SPLIT
-
-texts = [t.split() for t in df["Text"]]
-labels = [y for y in df["year"]]
-print(df)
-
-## 
-texts, vocab = preprocess_partitioned(texts, labels=labels, downsample=False)
-print(len(vocab), "vocab size")
-#print(vocab)
-traindata, valdata = [], []
-for t, is_validation in zip(texts, df["val"]):
-    if is_validation:
-        valdata += t
-    else:
-        traindata += t
-
-print(traindata[:10])
-print(traindata[-10:])
-
-
-## Generate prior graph
-g = nx.Graph()
-years = range(YEAR0, YEAR1)
-
-for year0, year1 in zip(years[:-1], years[1:]):
-    for wd in set([wd.split("_")[0] for wd in vocab]):
-        wd0 = f"{wd}_{year0}"
-        wd1 = f"{wd}_{year1}"
-        if wd0 in vocab and wd1 in vocab:
-            g.add_edge(wd0, wd1)
-
-print(list(g.edges)[:10])
-
-best_val_likelihood = -10000
-e_best = None
-
-## Grid search
-for l1 in [500, 50, 100, 250]:
-    print("Prior strength: ", l1)
-    e = LaplacianEmbedding(vocab, graph=g, dimensionality=100, lambda1=l1)
-    e = map_estimate(e, traindata, epochs=15, batch_size=20000)
-    val_likelihood = evaluate_on_holdout_set(e, valdata)
-
-    print(val_likelihood)
-    if val_likelihood > best_val_likelihood:
-        print("BEst likelihood")
-        best_val_likelihood = val_likelihood
-        e_best = e
-
-print(e_best)
+plt.savefig(f"similarity-{w1}-{w2}.png")
