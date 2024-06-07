@@ -71,4 +71,4 @@ Friday, June 21
 
 ## License
 
-Currently this repository is not licensed. All rights reserved.
+This repository is licensed via GNU GPL v3. Read the full license terms in the file [LICENSE](./LICENSE)
