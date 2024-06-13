@@ -142,7 +142,7 @@ Train the embedding using `map_estimate`. Feel free to set model to "sgns" or "c
 
 At this stage, you want to analyze the word embeddings you have trained. Oftentimes, it is useful to know which words are similar to each other. In word embeddings, this can be done with cosine similarity.
 
-Note that you will do the same analysis on two different embeddings: the one you trained, and a pretrained one available #link("https://example.com")[here].
+Note that you will do the same analysis on two different embeddings: the one you trained, and a pretrained one available #link("https://github.com/ninpnin/siml-public/releases/download/xd/congress-embedding.pkl")[here].
 
 Implement the cosine similarity metric. It is defined as
 
