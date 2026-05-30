@@ -13,10 +13,10 @@
 
 \definecolor{fgcolor}{rgb}{0.345, 0.345, 0.345}
 \newcommand{\hlnum}[1]{\textcolor[rgb]{0.686,0.059,0.569}{#1}}%
-\newcommand{\hlstr}[1]{\textcolor[rgb]{0.192,0.494,0.8}{#1}}%
+\newcommand{\hlsng}[1]{\textcolor[rgb]{0.192,0.494,0.8}{#1}}%
 \newcommand{\hlcom}[1]{\textcolor[rgb]{0.678,0.584,0.686}{\textit{#1}}}%
 \newcommand{\hlopt}[1]{\textcolor[rgb]{0,0,0}{#1}}%
-\newcommand{\hlstd}[1]{\textcolor[rgb]{0.345,0.345,0.345}{#1}}%
+\newcommand{\hldef}[1]{\textcolor[rgb]{0.345,0.345,0.345}{#1}}%
 \newcommand{\hlkwa}[1]{\textcolor[rgb]{0.161,0.373,0.58}{\textbf{#1}}}%
 \newcommand{\hlkwb}[1]{\textcolor[rgb]{0.69,0.353,0.396}{#1}}%
 \newcommand{\hlkwc}[1]{\textcolor[rgb]{0.333,0.667,0.333}{#1}}%
@@ -102,6 +102,7 @@
 \begin{document}
 %\SweaveOpts{concordance=TRUE}
 
+\hypersetup{pageanchor=false}
 \begin{titlepage}
 
 \center
@@ -114,6 +115,7 @@
 \vfill
 
 \end{titlepage}
+\hypersetup{pageanchor=true}
 
 
 % General Knitr options
@@ -127,10 +129,9 @@ This assignment uses the R package \texttt{uuml} with data and functionality to 
 \begin{knitrout}\small
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
-\hlkwd{install.packages}\hlstd{(}\hlstr{"remotes"}\hlstd{)}
-\hlstd{remotes}\hlopt{::}\hlkwd{install_github}\hlstd{(}\hlstr{"MansMeg/IntroML"}\hlstd{,} \hlkwc{subdir} \hlstd{=} \hlstr{"rpackage"}\hlstd{)}
-\hlkwd{install.packages}\hlstd{(}\hlstr{"tidytext"}\hlstd{)}
-\hlkwd{install.packages}\hlstd{(}\hlstr{"topicmodels"}\hlstd{)}
+\hlkwd{install.packages}\hldef{(}\hlsng{"remotes"}\hldef{)}
+\hldef{remotes}\hlopt{::}\hlkwd{install_github}\hldef{(}\hlsng{"MansMeg/IntroML"}\hldef{,} \hlkwc{subdir} \hldef{=} \hlsng{"rpackage"}\hldef{)}
+\hlkwd{install.packages}\hldef{(}\hlkwd{c}\hldef{(}\hlsng{"dplyr"}\hldef{,} \hlsng{"tidytext"}\hldef{,} \hlsng{"topicmodels"}\hldef{,} \hlsng{"tm"}\hldef{,} \hlsng{"zoo"}\hldef{))}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
@@ -144,19 +145,11 @@ We will use a Gibbs sampler to estimate ten different topics occurring in Pride 
 \begin{knitrout}\small
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
-\hlkwd{library}\hlstd{(uuml)}
-\hlkwd{library}\hlstd{(dplyr)}
-\end{alltt}
-
-
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\# \\\#\# Attaching package: 'dplyr'}}
-
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\# The following objects are masked from 'package:stats':\\\#\# \\\#\# \ \ \ \ filter, lag}}
-
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\# The following objects are masked from 'package:base':\\\#\# \\\#\# \ \ \ \ intersect, setdiff, setequal, union}}\begin{alltt}
-\hlkwd{library}\hlstd{(tidytext)}
-\hlkwd{data}\hlstd{(}\hlstr{"pride_and_prejudice"}\hlstd{)}
-\hlkwd{data}\hlstd{(}\hlstr{"stopwords"}\hlstd{)}
+\hlkwd{library}\hldef{(uuml)}
+\hlkwd{library}\hldef{(dplyr)}
+\hlkwd{library}\hldef{(tidytext)}
+\hlkwd{data}\hldef{(}\hlsng{"pride_and_prejudice"}\hldef{)}
+\hlkwd{data}\hldef{(}\hlsng{"stopwords"}\hldef{)}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
@@ -167,35 +160,39 @@ We will use a Gibbs sampler to estimate ten different topics occurring in Pride 
 \begin{knitrout}\small
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
-\hlstd{pap} \hlkwb{<-} \hlstd{pride_and_prejudice}
-\hlstd{pap} \hlkwb{<-} \hlkwd{anti_join}\hlstd{(pap,} \hlkwc{y} \hlstd{= stopwords[stopwords}\hlopt{$}\hlstd{lexicon} \hlopt{==} \hlstr{"snowball"}\hlstd{,])}
+\hldef{pap} \hlkwb{<-} \hldef{pride_and_prejudice}
+\hldef{pap} \hlkwb{<-} \hlkwd{anti_join}\hldef{(pap,} \hlkwc{y} \hldef{= stopwords[stopwords}\hlopt{$}\hldef{lexicon} \hlopt{==} \hlsng{"snowball"}\hldef{,])}
 \end{alltt}
-
-
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\# Joining with `by = join\_by(word)`}}\end{kframe}
+\end{kframe}
 \end{knitrout}
 
-\item Then we will remove rare words. Here we remove words that occur less than five times.
+\item Then we will remove rare words. Here we remove words that occur five times or fewer.
 \begin{knitrout}\small
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
-\hlstd{word_freq} \hlkwb{<-} \hlkwd{table}\hlstd{(pap}\hlopt{$}\hlstd{word)}
-\hlstd{rare_words} \hlkwb{<-} \hlkwd{data.frame}\hlstd{(}\hlkwc{word} \hlstd{=} \hlkwd{names}\hlstd{(word_freq[word_freq} \hlopt{<=} \hlnum{5}\hlstd{]),} \hlkwc{stringsAsFactors} \hlstd{=} \hlnum{FALSE}\hlstd{)}
-\hlstd{pap} \hlkwb{<-} \hlkwd{anti_join}\hlstd{(pap,} \hlkwc{y} \hlstd{= rare_words)}
+\hldef{word_freq} \hlkwb{<-} \hlkwd{table}\hldef{(pap}\hlopt{$}\hldef{word)}
+\hldef{rare_words} \hlkwb{<-} \hlkwd{data.frame}\hldef{(}
+  \hlkwc{word} \hldef{=} \hlkwd{names}\hldef{(word_freq[word_freq} \hlopt{<=} \hlnum{5}\hldef{]),}
+  \hlkwc{stringsAsFactors} \hldef{=} \hlnum{FALSE}
+\hldef{)}
+\hldef{pap} \hlkwb{<-} \hlkwd{anti_join}\hldef{(pap,} \hlkwc{y} \hldef{= rare_words)}
 \end{alltt}
-
-
-{\ttfamily\noindent\itshape\color{messagecolor}{\#\# Joining with `by = join\_by(word)`}}\end{kframe}
+\end{kframe}
 \end{knitrout}
-\item Now we have a corpus we can used to implement a probabilistic topic model. We do this by using the \texttt{topicmodels} R package. As a first step we will compute a document term matrix using the \texttt{tm} package, where we treat each paragraph as a document. How many documents and terms (word types) do you have?
+\item Now we have a corpus we can use to implement a probabilistic topic model. We do this by using the \texttt{topicmodels} R package. As a first step we will compute a document term matrix using the \texttt{tm} package, where we treat each paragraph as a document. How many documents and terms (word types) do you have?
 \begin{knitrout}\small
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
-\hlkwd{library}\hlstd{(tm)}
-\hlstd{crp} \hlkwb{<-} \hlkwd{aggregate}\hlstd{(pap}\hlopt{$}\hlstd{word,} \hlkwc{by} \hlstd{=} \hlkwd{list}\hlstd{(pap}\hlopt{$}\hlstd{paragraph),} \hlkwc{FUN} \hlstd{= paste0,} \hlkwc{collapse} \hlstd{=} \hlstr{" "}\hlstd{)}
-\hlkwd{names}\hlstd{(crp)} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlstr{"paragraph"}\hlstd{,} \hlstr{"text"}\hlstd{)}
-\hlstd{s} \hlkwb{<-} \hlkwd{SimpleCorpus}\hlstd{(}\hlkwd{VectorSource}\hlstd{(crp}\hlopt{$}\hlstd{text))}
-\hlstd{m} \hlkwb{<-} \hlkwd{DocumentTermMatrix}\hlstd{(s)}
+\hlkwd{library}\hldef{(tm)}
+\hldef{crp} \hlkwb{<-} \hlkwd{aggregate}\hldef{(}
+  \hldef{pap}\hlopt{$}\hldef{word,}
+  \hlkwc{by} \hldef{=} \hlkwd{list}\hldef{(pap}\hlopt{$}\hldef{paragraph),}
+  \hlkwc{FUN} \hldef{= paste0,}
+  \hlkwc{collapse} \hldef{=} \hlsng{" "}
+\hldef{)}
+\hlkwd{names}\hldef{(crp)} \hlkwb{<-} \hlkwd{c}\hldef{(}\hlsng{"paragraph"}\hldef{,} \hlsng{"text"}\hldef{)}
+\hldef{s} \hlkwb{<-} \hlkwd{SimpleCorpus}\hldef{(}\hlkwd{VectorSource}\hldef{(}\hlkwd{setNames}\hldef{(crp}\hlopt{$}\hldef{text, crp}\hlopt{$}\hldef{paragraph)))}
+\hldef{m} \hlkwb{<-} \hlkwd{DocumentTermMatrix}\hldef{(s)}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
@@ -203,11 +200,11 @@ We will use a Gibbs sampler to estimate ten different topics occurring in Pride 
 \begin{knitrout}\small
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
-\hlkwd{library}\hlstd{(topicmodels)}
-\hlstd{K} \hlkwb{<-} \hlnum{10}
-\hlcom{# Note: delta is beta in Griffith and Steyvers (2004) notation.}
-\hlstd{control} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{keep} \hlstd{=} \hlnum{1}\hlstd{,} \hlkwc{delta} \hlstd{=} \hlnum{0.1}\hlstd{,} \hlkwc{alpha} \hlstd{=} \hlnum{1}\hlstd{,} \hlkwc{iter} \hlstd{=} \hlnum{2000}\hlstd{)}
-\hlstd{tm} \hlkwb{<-} \hlkwd{LDA}\hlstd{(m,} \hlkwc{k} \hlstd{= K,} \hlkwc{method} \hlstd{=} \hlstr{"Gibbs"}\hlstd{, control)}
+\hlkwd{library}\hldef{(topicmodels)}
+\hldef{K} \hlkwb{<-} \hlnum{10}
+\hlcom{# Note: delta is beta in Griffiths and Steyvers (2004) notation.}
+\hldef{control} \hlkwb{<-} \hlkwd{list}\hldef{(}\hlkwc{keep} \hldef{=} \hlnum{1}\hldef{,} \hlkwc{delta} \hldef{=} \hlnum{0.1}\hldef{,} \hlkwc{alpha} \hldef{=} \hlnum{1}\hldef{,} \hlkwc{iter} \hldef{=} \hlnum{2000}\hldef{)}
+\hldef{lda_fit} \hlkwb{<-} \hlkwd{LDA}\hldef{(m,} \hlkwc{k} \hldef{= K,} \hlkwc{method} \hldef{=} \hlsng{"Gibbs"}\hldef{, control)}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
@@ -215,17 +212,17 @@ We will use a Gibbs sampler to estimate ten different topics occurring in Pride 
 \begin{knitrout}\small
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
-\hlkwd{library}\hlstd{(uuml)}
-\hlstd{lls} \hlkwb{<-} \hlkwd{extract_log_liks}\hlstd{(tm)}
-\hlstd{theta} \hlkwb{<-} \hlkwd{extract_theta}\hlstd{(tm)}
-\hlstd{phi} \hlkwb{<-} \hlkwd{extract_phi}\hlstd{(tm)}
+\hlkwd{library}\hldef{(uuml)}
+\hldef{lls} \hlkwb{<-} \hlkwd{extract_log_liks}\hldef{(lda_fit)}
+\hldef{theta} \hlkwb{<-} \hlkwd{extract_theta}\hldef{(lda_fit)}
+\hldef{phi} \hlkwb{<-} \hlkwd{extract_phi}\hldef{(lda_fit)}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
-\item As a first step, check that the model has converged by visualizing the log-likelihood over epochs/iterations. Does it seem like the model have converged?
+\item As a first step, check that the model has converged by visualizing the log-likelihood over epochs/iterations. Does it seem like the model has converged?
 \item Extract the 20 top words for each topic (i.e. the words with the highest probability in each topic). Choose two topics you find coherent/best (the top words seem to belong together). Interpret these two topics based on the storyline of the book. What have these two topics captured?
-\item Visualize these two topics evolve over the paragraphs in the books by plotting the $\theta$ parameters for that topic over time (paragraphs) in the book. Think of this as the time-line of the book. On the y-axis, you should plot $\theta_i$ for your chosen topic $i$ and the x-axis should be the paragraph number (first paragraph has number 1 and so forth).
-\item How do these two chosen topics evolve over the course in the book? If you want, you can take a rolling mean of the theta parameters to more easily show the changes in the topic over the book. \emph{Hint!} Here \texttt{zoo::rollmean()} might be a good function to use.
+\item Visualize how these two topics evolve over the paragraphs in the book by plotting the $\theta$ parameters for each topic over time. Think of this as the timeline of the book. On the y-axis, you should plot $\theta_i$ for your chosen topic $i$ and the x-axis should be the original paragraph number.
+\item How do these two chosen topics evolve over the course of the book? If you want, you can take a rolling mean of the theta parameters to more easily show the changes in the topic over the book. \emph{Hint!} Here \texttt{zoo::rollmean()} might be a good function to use.
 \item Test to change the number of topics and do your own analysis of the novel when you feel you have a good number of topics.
 
 \end{enumerate}
