@@ -163,6 +163,7 @@ Do not parse free text answers from the model. Instead, require a structured out
 <<eval=FALSE>>=
 party_labels <- c("Socialdemokraterna", "Moderaterna")
 
+# This tells the model exactly what fields to return.
 answer_format <- type_object(
   "Classification of one Swedish political manifesto quote.",
   party = type_enum(
