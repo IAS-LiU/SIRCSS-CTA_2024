@@ -52,6 +52,7 @@
 \begin{document}
 %\SweaveOpts{concordance=TRUE}
 
+\hypersetup{pageanchor=false}
 \begin{titlepage}
 
 \center
@@ -64,6 +65,7 @@
 \vfill
 
 \end{titlepage}
+\hypersetup{pageanchor=true}
 
 
 % General Knitr options
@@ -71,7 +73,7 @@
 
 <<echo=FALSE, eval=TRUE>>=
 options(continue="  ", prompt="> ")
-knitr::opts_chunk$set(size = "small")
+knitr::opts_chunk$set(size = "small", message = FALSE, warning = FALSE)
 @
 
 \section{Topic Models}
@@ -80,8 +82,7 @@ This assignment uses the R package \texttt{uuml} with data and functionality to 
 <<eval=FALSE>>=
 install.packages("remotes")
 remotes::install_github("MansMeg/IntroML", subdir = "rpackage")
-install.packages("tidytext")
-install.packages("topicmodels")
+install.packages(c("dplyr", "tidytext", "topicmodels", "tm", "zoo"))
 
 @
 
@@ -107,39 +108,47 @@ pap <- pride_and_prejudice
 pap <- anti_join(pap, y = stopwords[stopwords$lexicon == "snowball",])
 @
 
-\item Then we will remove rare words. Here we remove words that occur less than five times.
+\item Then we will remove rare words. Here we remove words that occur five times or fewer.
 <<>>=
 word_freq <- table(pap$word)
-rare_words <- data.frame(word = names(word_freq[word_freq <= 5]), stringsAsFactors = FALSE)
+rare_words <- data.frame(
+  word = names(word_freq[word_freq <= 5]),
+  stringsAsFactors = FALSE
+)
 pap <- anti_join(pap, y = rare_words)
 @
-\item Now we have a corpus we can used to implement a probabilistic topic model. We do this by using the \texttt{topicmodels} R package. As a first step we will compute a document term matrix using the \texttt{tm} package, where we treat each paragraph as a document. How many documents and terms (word types) do you have?
+\item Now we have a corpus we can use to implement a probabilistic topic model. We do this by using the \texttt{topicmodels} R package. As a first step we will compute a document term matrix using the \texttt{tm} package, where we treat each paragraph as a document. How many documents and terms (word types) do you have?
 <<eval=FALSE>>=
 library(tm)
-crp <- aggregate(pap$word, by = list(pap$paragraph), FUN = paste0, collapse = " ")
+crp <- aggregate(
+  pap$word,
+  by = list(pap$paragraph),
+  FUN = paste0,
+  collapse = " "
+)
 names(crp) <- c("paragraph", "text")
-s <- SimpleCorpus(VectorSource(crp$text))
+s <- SimpleCorpus(VectorSource(setNames(crp$text, crp$paragraph)))
 m <- DocumentTermMatrix(s)
 @
 \item To compute a topic model with ten topics, we use a Gibbs sampling algorithm. Below is an example of how we can run a Gibbs sampler for 2000 iterations. Run your topic model for 2000 iterations.
 <<eval=FALSE>>=
 library(topicmodels)
 K <- 10
-# Note: delta is beta in Griffith and Steyvers (2004) notation.
+# Note: delta is beta in Griffiths and Steyvers (2004) notation.
 control <- list(keep = 1, delta = 0.1, alpha = 1, iter = 2000)
-tm <- LDA(m, k = K, method = "Gibbs", control)
+lda_fit <- LDA(m, k = K, method = "Gibbs", control)
 @
 \item In the \texttt{uuml} R package you have three convenience functions to extract $\Theta$, $\Phi$ and the log-likelihood values at each iteration. This is the parameter notation used in \citet{griffiths2004finding}.
 <<eval=FALSE>>=
 library(uuml)
-lls <- extract_log_liks(tm)
-theta <- extract_theta(tm)
-phi <- extract_phi(tm)
+lls <- extract_log_liks(lda_fit)
+theta <- extract_theta(lda_fit)
+phi <- extract_phi(lda_fit)
 @
-\item As a first step, check that the model has converged by visualizing the log-likelihood over epochs/iterations. Does it seem like the model have converged?
+\item As a first step, check that the model has converged by visualizing the log-likelihood over epochs/iterations. Does it seem like the model has converged?
 \item Extract the 20 top words for each topic (i.e. the words with the highest probability in each topic). Choose two topics you find coherent/best (the top words seem to belong together). Interpret these two topics based on the storyline of the book. What have these two topics captured?
-\item Visualize these two topics evolve over the paragraphs in the books by plotting the $\theta$ parameters for that topic over time (paragraphs) in the book. Think of this as the time-line of the book. On the y-axis, you should plot $\theta_i$ for your chosen topic $i$ and the x-axis should be the paragraph number (first paragraph has number 1 and so forth).
-\item How do these two chosen topics evolve over the course in the book? If you want, you can take a rolling mean of the theta parameters to more easily show the changes in the topic over the book. \emph{Hint!} Here \texttt{zoo::rollmean()} might be a good function to use.
+\item Visualize how these two topics evolve over the paragraphs in the book by plotting the $\theta$ parameters for each topic over time. Think of this as the timeline of the book. On the y-axis, you should plot $\theta_i$ for your chosen topic $i$ and the x-axis should be the original paragraph number.
+\item How do these two chosen topics evolve over the course of the book? If you want, you can take a rolling mean of the theta parameters to more easily show the changes in the topic over the book. \emph{Hint!} Here \texttt{zoo::rollmean()} might be a good function to use.
 \item Test to change the number of topics and do your own analysis of the novel when you feel you have a good number of topics.
 
 \end{enumerate}
