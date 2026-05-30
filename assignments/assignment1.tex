@@ -90,7 +90,7 @@
 % Horizontal line
 \newcommand{\HRule}{\rule{\linewidth}{0.5mm}}
 
-% No page numbers
+% No page numbers on the title page
 \pagestyle{empty}
 
 % New commands:
@@ -116,6 +116,8 @@
 
 \end{titlepage}
 \hypersetup{pageanchor=true}
+\pagestyle{plain}
+\setcounter{page}{1}
 
 
 % General Knitr options
@@ -131,10 +133,22 @@ This assignment uses the R package \texttt{uuml} with data and functionality to 
 \begin{alltt}
 \hlkwd{install.packages}\hldef{(}\hlsng{"remotes"}\hldef{)}
 \hldef{remotes}\hlopt{::}\hlkwd{install_github}\hldef{(}\hlsng{"MansMeg/IntroML"}\hldef{,} \hlkwc{subdir} \hldef{=} \hlsng{"rpackage"}\hldef{)}
-\hlkwd{install.packages}\hldef{(}\hlkwd{c}\hldef{(}\hlsng{"dplyr"}\hldef{,} \hlsng{"tidytext"}\hldef{,} \hlsng{"topicmodels"}\hldef{,} \hlsng{"tm"}\hldef{,} \hlsng{"zoo"}\hldef{))}
+\hlkwd{install.packages}\hldef{(}\hlkwd{c}\hldef{(}\hlsng{"dplyr"}\hldef{,} \hlsng{"topicmodels"}\hldef{,} \hlsng{"tm"}\hldef{,} \hlsng{"zoo"}\hldef{))}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
+
+\subsection*{What to submit}
+
+Submit a short report or notebook that includes:
+\begin{itemize}
+\item the code needed to reproduce your analysis;
+\item a convergence plot based on the log-likelihood values;
+\item a table with the top words for each topic;
+\item interpretations of two coherent topics;
+\item topic-over-time plots for the two interpreted topics;
+\item a short analysis where you change the number of topics, $K$.
+\end{itemize}
 
 We will now analyze the classical book Pride and Prejudice by Jane Austen using a probabilistic topic model. If you have not read the book, \href{https://en.wikipedia.org/wiki/Pride_and_Prejudice}{\textbf{here}} you can read up on the story.
 
@@ -161,7 +175,11 @@ We will use a Gibbs sampler to estimate ten different topics occurring in Pride 
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
 \hldef{pap} \hlkwb{<-} \hldef{pride_and_prejudice}
-\hldef{pap} \hlkwb{<-} \hlkwd{anti_join}\hldef{(pap,} \hlkwc{y} \hldef{= stopwords[stopwords}\hlopt{$}\hldef{lexicon} \hlopt{==} \hlsng{"snowball"}\hldef{,])}
+\hldef{pap} \hlkwb{<-} \hlkwd{anti_join}\hldef{(}
+  \hldef{pap,}
+  \hlkwc{y} \hldef{= stopwords[stopwords}\hlopt{$}\hldef{lexicon} \hlopt{==} \hlsng{"snowball"}\hldef{,],}
+  \hlkwc{by} \hldef{=} \hlsng{"word"}
+\hldef{)}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
@@ -175,7 +193,7 @@ We will use a Gibbs sampler to estimate ten different topics occurring in Pride 
   \hlkwc{word} \hldef{=} \hlkwd{names}\hldef{(word_freq[word_freq} \hlopt{<=} \hlnum{5}\hldef{]),}
   \hlkwc{stringsAsFactors} \hldef{=} \hlnum{FALSE}
 \hldef{)}
-\hldef{pap} \hlkwb{<-} \hlkwd{anti_join}\hldef{(pap,} \hlkwc{y} \hldef{= rare_words)}
+\hldef{pap} \hlkwb{<-} \hlkwd{anti_join}\hldef{(pap,} \hlkwc{y} \hldef{= rare_words,} \hlkwc{by} \hldef{=} \hlsng{"word"}\hldef{)}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
@@ -193,10 +211,11 @@ We will use a Gibbs sampler to estimate ten different topics occurring in Pride 
 \hlkwd{names}\hldef{(crp)} \hlkwb{<-} \hlkwd{c}\hldef{(}\hlsng{"paragraph"}\hldef{,} \hlsng{"text"}\hldef{)}
 \hldef{s} \hlkwb{<-} \hlkwd{SimpleCorpus}\hldef{(}\hlkwd{VectorSource}\hldef{(}\hlkwd{setNames}\hldef{(crp}\hlopt{$}\hldef{text, crp}\hlopt{$}\hldef{paragraph)))}
 \hldef{m} \hlkwb{<-} \hlkwd{DocumentTermMatrix}\hldef{(s)}
+\hlkwd{dim}\hldef{(m)}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
-\item To compute a topic model with ten topics, we use a Gibbs sampling algorithm. Below is an example of how we can run a Gibbs sampler for 2000 iterations. Run your topic model for 2000 iterations.
+\item To compute a topic model with ten topics, we use a Gibbs sampling algorithm. Below is an example of how we can run a Gibbs sampler for 2000 iterations. Run your topic model for 2000 iterations. Gibbs sampling is stochastic; the seed below makes your result reproducible.
 \begin{knitrout}\small
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
@@ -204,6 +223,7 @@ We will use a Gibbs sampler to estimate ten different topics occurring in Pride 
 \hldef{K} \hlkwb{<-} \hlnum{10}
 \hlcom{# Note: delta is beta in Griffiths and Steyvers (2004) notation.}
 \hldef{control} \hlkwb{<-} \hlkwd{list}\hldef{(}\hlkwc{keep} \hldef{=} \hlnum{1}\hldef{,} \hlkwc{delta} \hldef{=} \hlnum{0.1}\hldef{,} \hlkwc{alpha} \hldef{=} \hlnum{1}\hldef{,} \hlkwc{iter} \hldef{=} \hlnum{2000}\hldef{)}
+\hlkwd{set.seed}\hldef{(}\hlnum{2026}\hldef{)}
 \hldef{lda_fit} \hlkwb{<-} \hlkwd{LDA}\hldef{(m,} \hlkwc{k} \hldef{= K,} \hlkwc{method} \hldef{=} \hlsng{"Gibbs"}\hldef{, control)}
 \end{alltt}
 \end{kframe}
@@ -216,12 +236,30 @@ We will use a Gibbs sampler to estimate ten different topics occurring in Pride 
 \hldef{lls} \hlkwb{<-} \hlkwd{extract_log_liks}\hldef{(lda_fit)}
 \hldef{theta} \hlkwb{<-} \hlkwd{extract_theta}\hldef{(lda_fit)}
 \hldef{phi} \hlkwb{<-} \hlkwd{extract_phi}\hldef{(lda_fit)}
+\hlkwd{dim}\hldef{(theta)}
+\hlkwd{dim}\hldef{(phi)}
+\hlkwd{length}\hldef{(lls)}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
 \item As a first step, check that the model has converged by visualizing the log-likelihood over epochs/iterations. Does it seem like the model has converged?
 \item Extract the 20 top words for each topic (i.e. the words with the highest probability in each topic). Choose two topics you find coherent/best (the top words seem to belong together). Interpret these two topics based on the storyline of the book. What have these two topics captured?
+\begin{knitrout}\small
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hldef{top_words} \hlkwb{<-} \hlkwd{terms}\hldef{(lda_fit,} \hlnum{20}\hldef{)}
+\hldef{top_words}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
 \item Visualize how these two topics evolve over the paragraphs in the book by plotting the $\theta$ parameters for each topic over time. Think of this as the timeline of the book. On the y-axis, you should plot $\theta_i$ for your chosen topic $i$ and the x-axis should be the original paragraph number.
+\begin{knitrout}\small
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hldef{paragraph_ids} \hlkwb{<-} \hlkwd{as.integer}\hldef{(}\hlkwd{rownames}\hldef{(theta))}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
 \item How do these two chosen topics evolve over the course of the book? If you want, you can take a rolling mean of the theta parameters to more easily show the changes in the topic over the book. \emph{Hint!} Here \texttt{zoo::rollmean()} might be a good function to use.
 \item Test to change the number of topics and do your own analysis of the novel when you feel you have a good number of topics.
 
