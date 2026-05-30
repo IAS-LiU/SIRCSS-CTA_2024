@@ -13,10 +13,10 @@
 
 \definecolor{fgcolor}{rgb}{0.345, 0.345, 0.345}
 \newcommand{\hlnum}[1]{\textcolor[rgb]{0.686,0.059,0.569}{#1}}%
-\newcommand{\hlstr}[1]{\textcolor[rgb]{0.192,0.494,0.8}{#1}}%
+\newcommand{\hlsng}[1]{\textcolor[rgb]{0.192,0.494,0.8}{#1}}%
 \newcommand{\hlcom}[1]{\textcolor[rgb]{0.678,0.584,0.686}{\textit{#1}}}%
 \newcommand{\hlopt}[1]{\textcolor[rgb]{0,0,0}{#1}}%
-\newcommand{\hlstd}[1]{\textcolor[rgb]{0.345,0.345,0.345}{#1}}%
+\newcommand{\hldef}[1]{\textcolor[rgb]{0.345,0.345,0.345}{#1}}%
 \newcommand{\hlkwa}[1]{\textcolor[rgb]{0.161,0.373,0.58}{\textbf{#1}}}%
 \newcommand{\hlkwb}[1]{\textcolor[rgb]{0.69,0.353,0.396}{#1}}%
 \newcommand{\hlkwc}[1]{\textcolor[rgb]{0.333,0.667,0.333}{#1}}%
@@ -74,9 +74,6 @@
 \usepackage{verbatim}
 \usepackage{url}
 
-\usepackage[round]{natbib}
-\bibliographystyle{unsrtnat}
-
 % Page size
 \addtolength{\hoffset}{-1cm}
 \addtolength{\textwidth}{2cm}
@@ -121,132 +118,308 @@
 
 
 
-\section{* Prompt engineering with ChatGPT}
+\section{Few-shot classification with large language models}
 
-You can choose to either do this task or the task above to get VG on this assignment.
+In-context learning is the idea to use large language models to complete tasks in a few-shot or zero-shot way. In this assignment, we will classify Swedish political manifesto quotes as belonging to either the Social Democratic party (\texttt{Socialdemokraterna}) or the Conservative party (\texttt{Moderaterna}).
 
-\input{distinction_task.tex}
+The goal is to use an LLM as a classifier through an API from R, store the outputs in a structured format, and evaluate the classifier properly.
 
-For this assignment, you need to have a user account at Open AI to generate an API token. See \href{https://help.openai.com/en/articles/4936850-where-do-i-find-my-api-key}{[this link]} for details on how to get an API token to use.
+\subsection{Install packages}
 
-\textcolor{red}{\emph{Warning:}} Do not upload any files containing your API key to public repositories (Github, public google colab, etc.).
-
-You also need to buy credits at Open AI. I think 1-2 dollars should be sufficient for this assignment.
-
-As a second step you need to install the \texttt{ropenaiapi} R package. This can be done as follows:
-\begin{knitrout}\small
-\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
-\begin{alltt}
-\hlkwd{library}\hlstd{(remotes)}
-\hlstd{remotes}\hlopt{::}\hlkwd{install_github}\hlstd{(}\hlstr{'MansMeg/ropenaiapi'}\hlstd{)}
-\end{alltt}
-\end{kframe}
-\end{knitrout}
-In the next step we set the API key as an environment variable with:
-\begin{knitrout}\small
-\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
-\begin{alltt}
-\hlkwd{library}\hlstd{(ropenaiapi)}
-\hlkwd{set_openai_api_key}\hlstd{(}\hlstr{"[YOUR KEY GOES HERE]"}\hlstd{)}
-\end{alltt}
-\end{kframe}
-\end{knitrout}
-
-We can now call the API with the \texttt{openai\_chat} function.
+Install the packages used in this assignment. The \texttt{uuml} package contains the course data and is installed from GitHub.
 
 \begin{knitrout}\small
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
-\hlstd{x} \hlkwb{<-} \hlkwd{openai_chat}\hlstd{(}\hlstr{"Who is Gustav Vasa? Give a short answer."}\hlstd{,}
-                 \hlkwc{model} \hlstd{=} \hlstr{"gpt-3.5-turbo"}\hlstd{)}
-\hlstd{x}
+\hlkwd{install.packages}\hldef{(}\hlkwd{c}\hldef{(}\hlsng{"ellmer"}\hldef{,} \hlsng{"caret"}\hldef{,} \hlsng{"remotes"}\hldef{,} \hlsng{"usethis"}\hldef{))}
+\hldef{remotes}\hlopt{::}\hlkwd{install_github}\hldef{(}\hlsng{"MansMeg/IntroML"}\hldef{,} \hlkwc{subdir} \hldef{=} \hlsng{"rpackage"}\hldef{)}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
 
+
+
+\subsection{OpenAI API key}
+
+For this assignment, you need an OpenAI developer account and an API key [here](https://platform.openai.com/api-keys). A ChatGPT Plus subscription is not the same thing as API access. This will cost you approx \$6. Feel free to try other LLMs instead, through \texttt{ellmer}.
+
+\textcolor{red}{\emph{Warning:}} Never write your API key directly in your script, report, or any file that may be uploaded to a public repository. Store it as an environment variable instead.
+
+Open your \texttt{.Renviron} file:
+
 \begin{knitrout}\small
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
-\begin{verbatim}
-## assistant:
-## Gustav Vasa was a Swedish king who led a successful rebellion
-## against Danish rule and became the founder of modern Sweden in
-## the 16th century.
-\end{verbatim}
+\begin{alltt}
+\hldef{usethis}\hlopt{::}\hlkwd{edit_r_environ}\hldef{()}
+\end{alltt}
 \end{kframe}
 \end{knitrout}
 
-See the \texttt{ropenaiapi} documentation with ```?openai\_chat``` in R for further information on how to interact with the Open AI API.
+Add the following line to the file, replacing the placeholder with your actual key:
 
-\emph{Note!} If you get ```Error: You exceeded your current quota, please check your plan and billing details.``` that means that you don't have any credits to use for the calls. You then need to buy some credits from Open AI, 1-2 dollars should be sufficient for this task.
+\begin{knitrout}\small
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hldef{OPENAI_API_KEY}\hlkwb{=}\hlsng{"[YOUR KEY GOES HERE]"}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
 
+Save the file and restart R. You can then check that R can see the key:
 
-\subsection{Make ChatGPT hallucinate}
+\begin{knitrout}\small
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlkwd{Sys.getenv}\hldef{(}\hlsng{"OPENAI_API_KEY"}\hldef{)} \hlopt{!=} \hlsng{""}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
 
-We are now going to understand how and when transformer-based decoder models 'hallucinate', i.e. when the models give factual incorrect information. See \cite[][, Section 7.1.2]{zhao2023survey} for an introduction and \cite{huang2023survey} for details on hallucinations in LLMs.
+\subsection{First API call}
 
-Now, create 3 different hallucinations with three different strategies (i.e. its not ok to use the same prompt for three incorrect generations) from the chatGPT models (you can choose which one you like). For each generated hallucination return:
+We will use \texttt{gpt-5.4-mini} for development and the main classification task. The argument \texttt{echo = "none"} means that \texttt{ellmer} does not automatically print model output while it is generated. This is useful when we run many API calls. For a single test call, we can override this with \texttt{echo = "output"} so that the answer is printed.
 
-\begin{enumerate}
-\item The prompt and a the \texttt{seed} supplied to the API. You are free to both create hallucinations through a longer conversation and tuning parameters.
-\item The response from the LLM.
-\item Why the response is factually incorrect and weather it is an intrinsic or extrinsic hallucination.
-\item Describe the strategy you use and the analysis why the hallucination happened.
-\end{enumerate}
+\begin{knitrout}\small
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlkwd{library}\hldef{(ellmer)}
 
-As a final step, when you have succeded to get the LLM to hallucinate, change the model to GPT-4 (include exact which model you use) and run the same prompt that you could get to hallucinate.
+\hldef{chat_test} \hlkwb{<-} \hlkwd{chat_openai}\hldef{(}
+  \hlkwc{model} \hldef{=} \hlsng{"gpt-5.4-mini"}\hldef{,}
+  \hlkwc{system_prompt} \hldef{=} \hlsng{"You are a helpful assistant."}\hldef{,}
+  \hlkwc{params} \hldef{=} \hlkwd{params}\hldef{(}\hlkwc{temperature} \hldef{=} \hlnum{0}\hldef{),}
+  \hlkwc{echo} \hldef{=} \hlsng{"none"}
+\hldef{)}
 
-\begin{enumerate}
-\item Return the response from GPT4 for each prompt.
-\item Is the response still factually incorrect? If not, see if you can get at least one hallucination for GPT-4. If you don't succeed, just state that.
-\end{enumerate}
+\hldef{chat_test}\hlopt{$}\hlkwd{chat}\hldef{(}
+  \hlsng{"Who was Gustav Vasa? Answer in one sentence."}\hldef{,}
+  \hlkwc{echo} \hldef{=} \hlsng{"output"}
+\hldef{)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
 
+\emph{Note!} API calls cost money. Start with a very small subset to check that your prompt, schema, and evaluation code work before running the model on more observations.
 
-
-\subsection{In-Context Learning for few-shot classification}
-
-In-context learning is the idea to use large language models to complete tasks in a few-shot or zero-shot way. In this task we are going to try to classify political quotes in Swedish to weather they belong to the social democratic party manifesto or the conservative party (Moderaterna) manifesto.
+\subsection{Data}
 
 \emph{Note!} This data is included in \texttt{uuml} version 0.4.0 and later.
 
 \begin{knitrout}\small
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
-\hlkwd{library}\hlstd{(uuml)}
-\hlkwd{data}\hlstd{(}\hlstr{"pc_test"}\hlstd{)}
-\hlkwd{data}\hlstd{(}\hlstr{"pc_train"}\hlstd{)}
+\hlkwd{library}\hldef{(uuml)}
+\hlkwd{library}\hldef{(caret)}
+
+\hlkwd{data}\hldef{(}\hlsng{"pc_test"}\hldef{)}
+\hlkwd{data}\hldef{(}\hlsng{"pc_train"}\hldef{)}
+
+\hldef{pc_train}\hlopt{$}\hldef{party} \hlkwb{<-} \hlkwd{as.character}\hldef{(pc_train}\hlopt{$}\hldef{party)}
+\hldef{pc_test}\hlopt{$}\hldef{party} \hlkwb{<-} \hlkwd{as.character}\hldef{(pc_test}\hlopt{$}\hldef{party)}
+
+\hldef{pc_train}\hlopt{$}\hldef{party[pc_train}\hlopt{$}\hldef{party} \hlopt{==} \hlsng{"S"}\hldef{]} \hlkwb{<-} \hlsng{"Socialdemokraterna"}
+\hldef{pc_train}\hlopt{$}\hldef{party[pc_train}\hlopt{$}\hldef{party} \hlopt{==} \hlsng{"M"}\hldef{]} \hlkwb{<-} \hlsng{"Moderaterna"}
+\hldef{pc_test}\hlopt{$}\hldef{party[pc_test}\hlopt{$}\hldef{party} \hlopt{==} \hlsng{"S"}\hldef{]} \hlkwb{<-} \hlsng{"Socialdemokraterna"}
+\hldef{pc_test}\hlopt{$}\hldef{party[pc_test}\hlopt{$}\hldef{party} \hlopt{==} \hlsng{"M"}\hldef{]} \hlkwb{<-} \hlsng{"Moderaterna"}
+
+\hlkwd{table}\hldef{(pc_train}\hlopt{$}\hldef{party)}
+\hlkwd{table}\hldef{(pc_test}\hlopt{$}\hldef{party)}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
 
-Below is an example on how you can combine the data to a text string that can be combined to be used in a prompt. Note, you need to develop further on this.
+\subsection{Structured outputs}
+
+Do not parse free text answers from the model. Instead, require a structured output with three fields: the predicted party, a confidence score, and a short reason.
 
 \begin{knitrout}\small
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
-\hlstd{example_string} \hlkwb{<-} \hlkwd{paste0}\hlstd{(pc_train}\hlopt{$}\hlstd{quote,}
-                         \hlstr{": "}\hlstd{,}
-                         \hlstd{pc_train}\hlopt{$}\hlstd{party,} \hlkwc{collapse} \hlstd{=} \hlstr{"\textbackslash{}n\textbackslash{}n"}\hlstd{)}
-\hlkwd{cat}\hlstd{(example_string)}
+\hldef{party_labels} \hlkwb{<-} \hlkwd{c}\hldef{(}\hlsng{"Socialdemokraterna"}\hldef{,} \hlsng{"Moderaterna"}\hldef{)}
+
+\hlcom{# This tells the model exactly what fields to return.}
+\hldef{answer_format} \hlkwb{<-} \hlkwd{type_object}\hldef{(}
+  \hlsng{"Classification of one Swedish political manifesto quote."}\hldef{,}
+  \hlkwc{party} \hldef{=} \hlkwd{type_enum}\hldef{(}
+    \hldef{party_labels,}
+    \hlsng{"Predicted party."}
+  \hldef{),}
+  \hlkwc{confidence} \hldef{=} \hlkwd{type_number}\hldef{(}\hlsng{"Confidence from 0 to 1."}\hldef{),}
+  \hlkwc{reason} \hldef{=} \hlkwd{type_string}\hldef{(}\hlsng{"Very short reason for the classification."}\hldef{)}
+\hldef{)}
+
+\hldef{chat_mini} \hlkwb{<-} \hlkwd{chat_openai}\hldef{(}
+  \hlkwc{model} \hldef{=} \hlsng{"gpt-5.4-mini"}\hldef{,}
+  \hlkwc{system_prompt} \hldef{=} \hlsng{"You classify Swedish political manifesto quotes."}\hldef{,}
+  \hlkwc{params} \hldef{=} \hlkwd{params}\hldef{(}\hlkwc{temperature} \hldef{=} \hlnum{0}\hldef{),}
+  \hlkwc{echo} \hldef{=} \hlsng{"none"}
+\hldef{)}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
 
-See \cite[][, Section 8]{zhao2023survey} for details on how to best engineer prompts to solve the classification task.
+\subsection{Few-shot prompt}
 
-Now use the techniques \cite[][, Section 8]{zhao2023survey} to generate as good prompts as possible to classify weather a quote is from the social democratic or the conservative manifesto.
+Create a small, balanced set of examples from the training data and use them to build a few-shot classification prompt.
 
+\begin{knitrout}\small
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlkwd{set.seed}\hldef{(}\hlnum{123}\hldef{)}
+
+\hldef{s_examples} \hlkwb{<-} \hldef{pc_train[pc_train}\hlopt{$}\hldef{party} \hlopt{==} \hlsng{"Socialdemokraterna"}\hldef{, ]}
+\hldef{m_examples} \hlkwb{<-} \hldef{pc_train[pc_train}\hlopt{$}\hldef{party} \hlopt{==} \hlsng{"Moderaterna"}\hldef{, ]}
+
+\hldef{s_examples} \hlkwb{<-} \hldef{s_examples[}\hlkwd{sample}\hldef{(}\hlkwd{nrow}\hldef{(s_examples),} \hlnum{3}\hldef{), ]}
+\hldef{m_examples} \hlkwb{<-} \hldef{m_examples[}\hlkwd{sample}\hldef{(}\hlkwd{nrow}\hldef{(m_examples),} \hlnum{3}\hldef{), ]}
+
+\hldef{examples} \hlkwb{<-} \hlkwd{rbind}\hldef{(s_examples, m_examples)}
+
+\hldef{examples_text} \hlkwb{<-} \hlkwd{paste0}\hldef{(}
+  \hlsng{"Quote: "}\hldef{, examples}\hlopt{$}\hldef{quote,}
+  \hlsng{"\textbackslash{}nParty: "}\hldef{, examples}\hlopt{$}\hldef{party,}
+  \hlkwc{collapse} \hldef{=} \hlsng{"\textbackslash{}n\textbackslash{}n"}
+\hldef{)}
+
+\hlkwd{cat}\hldef{(examples_text)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+\subsection{Small pilot run}
+
+Before classifying many quotes, run the model on 10 test quotes. Inspect the returned \texttt{party}, \texttt{confidence}, and \texttt{reason} fields. If the output looks wrong, revise your prompt before continuing.
+
+\begin{knitrout}\small
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hldef{pc_pilot} \hlkwb{<-} \hldef{pc_test[}\hlkwd{sample}\hldef{(}\hlkwd{nrow}\hldef{(pc_test),} \hlnum{10}\hldef{), ]}
+
+\hldef{pilot_prompts} \hlkwb{<-} \hlkwd{paste0}\hldef{(}
+  \hlsng{"Classify the Swedish political manifesto quote.\textbackslash{}n\textbackslash{}n"}\hldef{,}
+  \hlsng{"Allowed labels: Socialdemokraterna or Moderaterna.\textbackslash{}n\textbackslash{}n"}\hldef{,}
+  \hlsng{"Examples:\textbackslash{}n\textbackslash{}n"}\hldef{, examples_text,} \hlsng{"\textbackslash{}n\textbackslash{}n"}\hldef{,}
+  \hlsng{"Quote to classify:\textbackslash{}n\textbackslash{}n"}\hldef{, pc_pilot}\hlopt{$}\hldef{quote}
+\hldef{)}
+
+\hldef{pilot_predictions} \hlkwb{<-} \hlkwd{parallel_chat_structured}\hldef{(}
+  \hldef{chat_mini,}
+  \hldef{pilot_prompts,}
+  \hlkwc{type} \hldef{= answer_format,}
+  \hlkwc{max_active} \hldef{=} \hlnum{2}
+\hldef{)}
+
+\hlkwd{names}\hldef{(pilot_predictions)[}\hlkwd{names}\hldef{(pilot_predictions)} \hlopt{==} \hlsng{"party"}\hldef{]} \hlkwb{<-} \hlsng{"prediction"}
+\hldef{pilot_results} \hlkwb{<-} \hlkwd{cbind}\hldef{(pc_pilot, pilot_predictions)}
+\hldef{pilot_results[,} \hlkwd{c}\hldef{(}\hlsng{"quote"}\hldef{,} \hlsng{"party"}\hldef{,} \hlsng{"prediction"}\hldef{,} \hlsng{"confidence"}\hldef{,} \hlsng{"reason"}\hldef{)]}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+\subsection{Evaluate the mini model}
+
+After your pilot works, classify the full test set or a clearly justified subset of the test set. The \texttt{caret} package computes the confusion matrix and common classification metrics for us.
+
+\begin{knitrout}\small
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hldef{test_prompts} \hlkwb{<-} \hlkwd{paste0}\hldef{(}
+  \hlsng{"Classify the Swedish political manifesto quote.\textbackslash{}n\textbackslash{}n"}\hldef{,}
+  \hlsng{"Allowed labels: Socialdemokraterna or Moderaterna.\textbackslash{}n\textbackslash{}n"}\hldef{,}
+  \hlsng{"Examples:\textbackslash{}n\textbackslash{}n"}\hldef{, examples_text,} \hlsng{"\textbackslash{}n\textbackslash{}n"}\hldef{,}
+  \hlsng{"Quote to classify:\textbackslash{}n\textbackslash{}n"}\hldef{, pc_test}\hlopt{$}\hldef{quote}
+\hldef{)}
+
+\hldef{mini_predictions} \hlkwb{<-} \hlkwd{parallel_chat_structured}\hldef{(}
+  \hldef{chat_mini,}
+  \hldef{test_prompts,}
+  \hlkwc{type} \hldef{= answer_format,}
+  \hlkwc{max_active} \hldef{=} \hlnum{2}
+\hldef{)}
+
+\hlkwd{names}\hldef{(mini_predictions)[}\hlkwd{names}\hldef{(mini_predictions)} \hlopt{==} \hlsng{"party"}\hldef{]} \hlkwb{<-} \hlsng{"prediction"}
+\hldef{mini_results} \hlkwb{<-} \hlkwd{cbind}\hldef{(pc_test, mini_predictions)}
+
+\hlkwd{confusionMatrix}\hldef{(}
+  \hlkwc{data} \hldef{=} \hlkwd{factor}\hldef{(mini_results}\hlopt{$}\hldef{prediction,} \hlkwc{levels} \hldef{= party_labels),}
+  \hlkwc{reference} \hldef{=} \hlkwd{factor}\hldef{(mini_results}\hlopt{$}\hldef{party,} \hlkwc{levels} \hldef{= party_labels),}
+  \hlkwc{mode} \hldef{=} \hlsng{"everything"}
+\hldef{)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+\subsection{Compare with GPT-5.5}
+
+Use the same prompt and the same evaluation cases to compare \texttt{gpt-5.4-mini} with \texttt{gpt-5.5}. If API costs are a concern, compare both models on a random subset of at least 30 test quotes and state clearly that you used a subset.
+
+\begin{knitrout}\small
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hldef{chat_55} \hlkwb{<-} \hlkwd{chat_openai}\hldef{(}
+  \hlkwc{model} \hldef{=} \hlsng{"gpt-5.5"}\hldef{,}
+  \hlkwc{system_prompt} \hldef{=} \hlsng{"You classify Swedish political manifesto quotes."}\hldef{,}
+  \hlkwc{params} \hldef{=} \hlkwd{params}\hldef{(}\hlkwc{temperature} \hldef{=} \hlnum{0}\hldef{),}
+  \hlkwc{echo} \hldef{=} \hlsng{"none"}
+\hldef{)}
+
+\hldef{pc_compare} \hlkwb{<-} \hldef{pc_test[}\hlkwd{sample}\hldef{(}\hlkwd{nrow}\hldef{(pc_test),} \hlnum{30}\hldef{), ]}
+
+\hldef{comparison_prompts} \hlkwb{<-} \hlkwd{paste0}\hldef{(}
+  \hlsng{"Classify the Swedish political manifesto quote.\textbackslash{}n\textbackslash{}n"}\hldef{,}
+  \hlsng{"Allowed labels: Socialdemokraterna or Moderaterna.\textbackslash{}n\textbackslash{}n"}\hldef{,}
+  \hlsng{"Examples:\textbackslash{}n\textbackslash{}n"}\hldef{, examples_text,} \hlsng{"\textbackslash{}n\textbackslash{}n"}\hldef{,}
+  \hlsng{"Quote to classify:\textbackslash{}n\textbackslash{}n"}\hldef{, pc_compare}\hlopt{$}\hldef{quote}
+\hldef{)}
+
+\hldef{mini_compare} \hlkwb{<-} \hlkwd{parallel_chat_structured}\hldef{(}
+  \hldef{chat_mini,}
+  \hldef{comparison_prompts,}
+  \hlkwc{type} \hldef{= answer_format,}
+  \hlkwc{max_active} \hldef{=} \hlnum{2}
+\hldef{)}
+
+\hldef{gpt55_compare} \hlkwb{<-} \hlkwd{parallel_chat_structured}\hldef{(}
+  \hldef{chat_55,}
+  \hldef{comparison_prompts,}
+  \hlkwc{type} \hldef{= answer_format,}
+  \hlkwc{max_active} \hldef{=} \hlnum{2}
+\hldef{)}
+
+\hlkwd{names}\hldef{(mini_compare)[}\hlkwd{names}\hldef{(mini_compare)} \hlopt{==} \hlsng{"party"}\hldef{]} \hlkwb{<-} \hlsng{"prediction"}
+\hlkwd{names}\hldef{(gpt55_compare)[}\hlkwd{names}\hldef{(gpt55_compare)} \hlopt{==} \hlsng{"party"}\hldef{]} \hlkwb{<-} \hlsng{"prediction"}
+
+\hlkwd{confusionMatrix}\hldef{(}
+  \hlkwc{data} \hldef{=} \hlkwd{factor}\hldef{(mini_compare}\hlopt{$}\hldef{prediction,} \hlkwc{levels} \hldef{= party_labels),}
+  \hlkwc{reference} \hldef{=} \hlkwd{factor}\hldef{(pc_compare}\hlopt{$}\hldef{party,} \hlkwc{levels} \hldef{= party_labels),}
+  \hlkwc{mode} \hldef{=} \hlsng{"everything"}
+\hldef{)}
+
+\hlkwd{confusionMatrix}\hldef{(}
+  \hlkwc{data} \hldef{=} \hlkwd{factor}\hldef{(gpt55_compare}\hlopt{$}\hldef{prediction,} \hlkwc{levels} \hldef{= party_labels),}
+  \hlkwc{reference} \hldef{=} \hlkwd{factor}\hldef{(pc_compare}\hlopt{$}\hldef{party,} \hlkwc{levels} \hldef{= party_labels),}
+  \hlkwc{mode} \hldef{=} \hlsng{"everything"}
+\hldef{)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+Discuss whether \texttt{gpt-5.5} improves the classification enough to justify using the larger model for this task. Compare performance, confidence, errors, and practical issues such as cost.
+
+\subsection{What to hand in}
+
+Your report should include:
 
 \begin{enumerate}
-\item Start with zero-shot learning, ie only prompt the LLM without any demonstrations. Test to classify the quotes in the test set.
-\item Test how far you can get by using better prompt descriptions to classify the quotes. Try to get responses as classes from the model.
-\item Now add demonstrations by adding examples from the training set. Does that improve the accuracy on the testset?
-\item Try at least three different strategies from \cite[][, Section 8]{zhao2023survey} to improve the quality. Discuss your conclusions.
+\item A short description of your few-shot prompt and how you selected the demonstrations.
+\item The structured output schema used for the model response.
+\item Results from the small pilot run, including any prompt changes you made after inspecting it.
+\item Proper evaluation of your final \texttt{gpt-5.4-mini} classifier using \texttt{confusionMatrix()}.
+\item A comparison between \texttt{gpt-5.4-mini} and \texttt{gpt-5.5} on the same evaluation cases.
+\item A short discussion of what kinds of quotes the model misclassified and whether the larger model was worth using.
 \end{enumerate}
 
 \newpage
-
-
-\bibliography{bibliography}
 
 \end{document}
 
