@@ -95,7 +95,6 @@ For this assignment, you need an OpenAI developer account and an API key. A Chat
 Open your \texttt{.Renviron} file:
 
 <<eval=FALSE>>=
-install.packages("usethis")
 usethis::edit_r_environ()
 @
 
