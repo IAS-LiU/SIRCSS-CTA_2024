@@ -40,7 +40,7 @@
 % Horizontal line
 \newcommand{\HRule}{\rule{\linewidth}{0.5mm}}
 
-% No page numbers
+% No page numbers on the title page
 \pagestyle{empty}
 
 % New commands:
@@ -66,6 +66,8 @@
 
 \end{titlepage}
 \hypersetup{pageanchor=true}
+\pagestyle{plain}
+\setcounter{page}{1}
 
 
 % General Knitr options
@@ -82,9 +84,21 @@ This assignment uses the R package \texttt{uuml} with data and functionality to 
 <<eval=FALSE>>=
 install.packages("remotes")
 remotes::install_github("MansMeg/IntroML", subdir = "rpackage")
-install.packages(c("dplyr", "tidytext", "topicmodels", "tm", "zoo"))
+install.packages(c("dplyr", "topicmodels", "tm", "zoo"))
 
 @
+
+\subsection*{What to submit}
+
+Submit a short report or notebook that includes:
+\begin{itemize}
+\item the code needed to reproduce your analysis;
+\item a convergence plot based on the log-likelihood values;
+\item a table with the top words for each topic;
+\item interpretations of two coherent topics;
+\item topic-over-time plots for the two interpreted topics;
+\item a short analysis where you change the number of topics, $K$.
+\end{itemize}
 
 We will now analyze the classical book Pride and Prejudice by Jane Austen using a probabilistic topic model. If you have not read the book, \href{https://en.wikipedia.org/wiki/Pride_and_Prejudice}{\textbf{here}} you can read up on the story.
 
@@ -105,7 +119,11 @@ data("stopwords")
 \item As a first step, we will remove stopwords (common English words without much semantic information):
 <<>>=
 pap <- pride_and_prejudice
-pap <- anti_join(pap, y = stopwords[stopwords$lexicon == "snowball",])
+pap <- anti_join(
+  pap,
+  y = stopwords[stopwords$lexicon == "snowball",],
+  by = "word"
+)
 @
 
 \item Then we will remove rare words. Here we remove words that occur five times or fewer.
@@ -115,7 +133,7 @@ rare_words <- data.frame(
   word = names(word_freq[word_freq <= 5]),
   stringsAsFactors = FALSE
 )
-pap <- anti_join(pap, y = rare_words)
+pap <- anti_join(pap, y = rare_words, by = "word")
 @
 \item Now we have a corpus we can use to implement a probabilistic topic model. We do this by using the \texttt{topicmodels} R package. As a first step we will compute a document term matrix using the \texttt{tm} package, where we treat each paragraph as a document. How many documents and terms (word types) do you have?
 <<eval=FALSE>>=
@@ -129,13 +147,15 @@ crp <- aggregate(
 names(crp) <- c("paragraph", "text")
 s <- SimpleCorpus(VectorSource(setNames(crp$text, crp$paragraph)))
 m <- DocumentTermMatrix(s)
+dim(m)
 @
-\item To compute a topic model with ten topics, we use a Gibbs sampling algorithm. Below is an example of how we can run a Gibbs sampler for 2000 iterations. Run your topic model for 2000 iterations.
+\item To compute a topic model with ten topics, we use a Gibbs sampling algorithm. Below is an example of how we can run a Gibbs sampler for 2000 iterations. Run your topic model for 2000 iterations. Gibbs sampling is stochastic; the seed below makes your result reproducible.
 <<eval=FALSE>>=
 library(topicmodels)
 K <- 10
 # Note: delta is beta in Griffiths and Steyvers (2004) notation.
 control <- list(keep = 1, delta = 0.1, alpha = 1, iter = 2000)
+set.seed(2026)
 lda_fit <- LDA(m, k = K, method = "Gibbs", control)
 @
 \item In the \texttt{uuml} R package you have three convenience functions to extract $\Theta$, $\Phi$ and the log-likelihood values at each iteration. This is the parameter notation used in \citet{griffiths2004finding}.
@@ -144,10 +164,20 @@ library(uuml)
 lls <- extract_log_liks(lda_fit)
 theta <- extract_theta(lda_fit)
 phi <- extract_phi(lda_fit)
+dim(theta)
+dim(phi)
+length(lls)
 @
 \item As a first step, check that the model has converged by visualizing the log-likelihood over epochs/iterations. Does it seem like the model has converged?
 \item Extract the 20 top words for each topic (i.e. the words with the highest probability in each topic). Choose two topics you find coherent/best (the top words seem to belong together). Interpret these two topics based on the storyline of the book. What have these two topics captured?
+<<eval=FALSE>>=
+top_words <- terms(lda_fit, 20)
+top_words
+@
 \item Visualize how these two topics evolve over the paragraphs in the book by plotting the $\theta$ parameters for each topic over time. Think of this as the timeline of the book. On the y-axis, you should plot $\theta_i$ for your chosen topic $i$ and the x-axis should be the original paragraph number.
+<<eval=FALSE>>=
+paragraph_ids <- as.integer(rownames(theta))
+@
 \item How do these two chosen topics evolve over the course of the book? If you want, you can take a rolling mean of the theta parameters to more easily show the changes in the topic over the book. \emph{Hint!} Here \texttt{zoo::rollmean()} might be a good function to use.
 \item Test to change the number of topics and do your own analysis of the novel when you feel you have a good number of topics.
 
